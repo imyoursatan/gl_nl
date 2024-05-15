@@ -20,7 +20,7 @@ const App = () => {
 					element={<RegisterForm onRegisterSuccess={handleRegisterSuccess} />}
 				/>
 				<Route path="/login" element={<LoginForm />} />
-				<Route path="/leaderboard" element={<Leaderboard />} />
+				{/* <Route path="/leaderboard" element={<Leaderboard />} /> */}
 				<Route path="/userlist" element={<UserList />} />{' '}
 				<Route path="/" element={<LoginForm />} />
 			</Routes>

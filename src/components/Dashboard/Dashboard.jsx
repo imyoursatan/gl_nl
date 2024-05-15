@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrophy, faPlay, faStop } from '@fortawesome/free-solid-svg-icons';
+import { faPlay, faStop } from '@fortawesome/free-solid-svg-icons';
 import './dashboard.css';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useLocation } from 'react-router-dom';
 
@@ -14,7 +14,7 @@ const CongratulationsPopup = ({ onClose }) => {
 					&times;
 				</span>
 				<h2>Selamat!</h2>
-				<p>Anda berhasil memenangkan 5 poin dari perjalanan!</p>
+				<p>Rekaman perjalanan anda telah berhasil!</p>
 				<button onClick={onClose}>Tutup</button>
 			</div>
 		</div>
@@ -29,7 +29,7 @@ const StartButton = ({ onStartClick }) => {
 	);
 };
 
-const StopButton = ({ onStopClick, memenangkanPoin }) => {
+const StopButton = ({ onStopClick }) => {
 	return (
 		<div className="play-stop-icon-wrapper playing" onClick={onStopClick}>
 			<FontAwesomeIcon icon={faStop} className="play-stop-icon" />
@@ -40,7 +40,6 @@ const StopButton = ({ onStopClick, memenangkanPoin }) => {
 const DashboardForm = ({
 	location: routeLocation,
 	onJalurPerjalananUpdate,
-	userPoints,
 }) => {
 	const [showDropdown, setShowDropdown] = useState(false);
 	const [isPlaying, setIsPlaying] = useState(false);
@@ -48,14 +47,11 @@ const DashboardForm = ({
 	const [currentLocation, setCurrentLocation] = useState(null);
 	const [locationPermissionDenied, setLocationPermissionDenied] =
 		useState(false);
-	const [poin, setPoin] = useState(0);
-	const [perjalanans, setPerjalanans] = useState([]);
 	const [showCongratulations, setShowCongratulations] = useState(false);
 	const [userData, setUserData] = useState(null);
 	const [jalurPerjalanan, setJalurPerjalanan] = useState(null);
 	const [historyPerjalanan, setHistoryPerjalanan] = useState([]);
 	const navigate = useNavigate();
-	const [leaderboardData, setLeaderboardData] = useState([]);
 
 	const location = useLocation();
 
@@ -168,17 +164,7 @@ const DashboardForm = ({
 							koordinat_start: jalurPerjalanan,
 						};
 						setHistoryPerjalanan([...historyPerjalanan, perjalananSelesai]);
-						if (memenangkanPoin(perjalananSelesai)) {
-							const updatedLeaderboardData = [
-								...leaderboardData,
-								{ name: username, points: 5 },
-							];
-							setLeaderboardData(updatedLeaderboardData);
-							const updatedPoin = poin + 5;
-							setPoin(updatedPoin);
-							updateLeaderboard();
-							showCongratulationsPopup();
-						}
+						showCongratulationsPopup();
 					})
 					.catch((error) => {
 						console.error('Gagal menghentikan perjalanan:', error);
@@ -186,22 +172,6 @@ const DashboardForm = ({
 			})
 			.catch((error) => {
 				console.error('Gagal mendapatkan izin lokasi:', error);
-			});
-	};
-
-	const memenangkanPoin = (perjalananSelesai) => {
-		return true;
-	};
-
-	const updateLeaderboard = () => {
-		axios
-			.get('http://localhost:3001/api/leaderboard')
-			.then((response) => {
-				const leaderboardList = response.data.leaderboard;
-				setLeaderboardData(leaderboardList);
-			})
-			.catch((error) => {
-				console.error('Error fetching updated leaderboard data:', error);
 			});
 	};
 
@@ -217,9 +187,6 @@ const DashboardForm = ({
 					</div>
 				)}
 			</div>
-			<Link to="/leaderboard" className="leaderboard-button">
-				<FontAwesomeIcon icon={faTrophy} className="trophy-icon" />
-			</Link>
 			<div className="dashboard-box">
 				<div className="dashboard-header"></div>
 				<div className="dashboard-input-group1">
@@ -273,10 +240,7 @@ const DashboardForm = ({
 						</div>
 					)}
 					{isPlaying ? (
-						<StopButton
-							onStopClick={handleStopClick}
-							memenangkanPoin={memenangkanPoin}
-						/>
+						<StopButton onStopClick={handleStopClick} />
 					) : (
 						<StartButton onStartClick={handleStartClick} />
 					)}

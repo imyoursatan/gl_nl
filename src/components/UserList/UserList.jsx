@@ -30,7 +30,7 @@ const UserList = () => {
 				console.log('Data pengguna dari server:', response.data);
 				const usersWithPoints = response.data.map((user) => ({
 					...user,
-					points: calculateUserPoints(user.id),
+					// points: calculateUserPoints(user.id),
 				}));
 				setUsers(usersWithPoints);
 			})
@@ -83,15 +83,15 @@ const UserList = () => {
 		}
 	}, [perjalanans]);
 
-	const calculateUserPoints = (userId) => {
-		const userJourneys = perjalanans.filter(
-			(perjalanan) => perjalanan.userId === userId
-		);
-		return userJourneys.reduce(
-			(totalPoints, journey) => totalPoints + journey.poin_diperoleh,
-			0
-		);
-	};
+	// const calculateUserPoints = (userId) => {
+	// 	const userJourneys = perjalanans.filter(
+	// 		(perjalanan) => perjalanan.userId === userId
+	// 	);
+	// 	return userJourneys.reduce(
+	// 		(totalPoints, journey) => totalPoints + journey.poin_diperoleh,
+	// 		0
+	// 	);
+	// };
 
 	const handleExportToExcel = async () => {
 		if (users.length === 0 || perjalanans.length === 0) {
@@ -107,7 +107,6 @@ const UserList = () => {
 					const endLocation = await reverseGeocode(
 						perjalanan.koordinat_end.split(',').map(Number)
 					);
-
 					const startCoords = perjalanan.koordinat_start.split(',').map(Number);
 					const endCoords = perjalanan.koordinat_end.split(',').map(Number);
 					const journeyDistance = haversineDistance(
@@ -116,7 +115,6 @@ const UserList = () => {
 						endCoords[0],
 						endCoords[1]
 					);
-
 					return {
 						...perjalanan,
 						koordinat_start: `${startLocation} (${perjalanan.koordinat_start})`,
@@ -133,7 +131,7 @@ const UserList = () => {
 				'Users'
 			);
 			XLSX.utils.book_append_sheet(wb, wsPerjalanans, 'Perjalanans');
-			XLSX.writeFile(wb, 'users_and_perjalanans.xlsx');
+			XLSX.writeFile(wb, 'users_and_perjalanans_tanpa_leaderboard.xlsx');
 		} catch (error) {
 			console.error('Error saat mengekspor data ke Excel:', error);
 		}
@@ -175,7 +173,6 @@ const UserList = () => {
 							response.data
 						);
 						setPerjalanans(response.data);
-
 						// Setel ulang nilai auto-increment untuk kolom id
 						axios
 							.post('http://localhost:3001/api/resetAutoIncrement')
@@ -235,7 +232,6 @@ const UserList = () => {
 		<div>
 			<h1>User List</h1>
 			<button onClick={handleExportToExcel}>Export to Excel</button>
-
 			<h2>Data Users</h2>
 			<table>
 				<thead>
@@ -243,7 +239,7 @@ const UserList = () => {
 						<th>Email</th>
 						<th>Username</th>
 						<th>Password</th>
-						<th>Points</th>
+						{/* <th>Points</th> */}
 						<th>Action</th>
 					</tr>
 				</thead>
@@ -253,7 +249,7 @@ const UserList = () => {
 							<td>{user.email}</td>
 							<td>{user.username}</td>
 							<td>{user.password}</td>
-							<td>{user.points}</td>
+							{/* <td>{user.points}</td> */}
 							<td>
 								<button onClick={() => handleDeleteUser(user.id)}>Hapus</button>
 							</td>
@@ -274,7 +270,7 @@ const UserList = () => {
 						<th>Koordinat Start</th>
 						<th>Koordinat End</th>
 						<th>Panjang Perjalanan</th>
-						<th>Poin Diperoleh</th>
+						{/* <th>Poin Diperoleh</th> */}
 						<th>Action</th>
 					</tr>
 				</thead>
@@ -293,7 +289,7 @@ const UserList = () => {
 								{formatDistance(locations[perjalanan.id]?.distance) ||
 									'Loading...'}
 							</td>
-							<td>{perjalanan.poin_diperoleh}</td>
+							{/* <td>{perjalanan.poin_diperoleh}</td> */}
 							<td>
 								<button onClick={() => handleDeletePerjalanan(perjalanan.id)}>
 									Hapus

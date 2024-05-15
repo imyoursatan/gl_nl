@@ -3,16 +3,15 @@ const bodyParser = require('body-parser');
 const mysql = require('mysql');
 const cors = require('cors');
 const ExcelJS = require('exceljs');
-const next = require('next');
 
 const app = express();
 const port = 3001;
 
 const db = mysql.createConnection({
 	host: 'localhost',
-	user: 'root',
+	user: 'teguh',
 	password: 'teguhganteng',
-	database: 'data_register',
+	database: 'gamifikasi',
 	port: 3306,
 });
 
@@ -41,7 +40,7 @@ app.get('/userlist', authenticateUser, (req, res) => {
 app.delete('/api/users/:userId', (req, res) => {
 	const userId = req.params.userId;
 
-	const sql = 'DELETE FROM register_data WHERE id = ?';
+	const sql = 'DELETE FROM data_register WHERE id = ?';
 	db.query(sql, [userId], (err, result) => {
 		if (err) {
 			console.error('Error deleting user:', err);
@@ -87,33 +86,14 @@ app.post('/api/register', (req, res) => {
 	}
 
 	const sql =
-		'INSERT INTO register_data (email, username, password) VALUES (?, ?, ?)';
+		'INSERT INTO data_register (email, username, password) VALUES (?, ?, ?)';
 	db.query(sql, [email, username, password], (err, result) => {
 		if (err) {
-			return err;
+			return res.status(500).json({ error: 'Internal Server Error' });
 		}
 
 		console.log('Data berhasil ditambahkan:', result);
 		res.status(200).json({ message: 'Registrasi berhasil.' });
-	});
-});
-
-app.get('/api/leaderboard', (req, res) => {
-	const sql =
-		'SELECT rd.username, SUM(dp.poin_diperoleh) AS total_points ' +
-		'FROM data_perjalanan dp ' +
-		'JOIN register_data rd ON dp.nama = rd.username ' +
-		'GROUP BY rd.username ' +
-		'ORDER BY total_points DESC ' +
-		'LIMIT 10';
-
-	db.query(sql, (err, result) => {
-		if (err) {
-			console.error('Error fetching leaderboard data:', err);
-			res.status(500).json({ error: 'Internal Server Error' });
-		}
-
-		res.status(200).json(result);
 	});
 });
 
@@ -174,47 +154,28 @@ app.post('/api/stop_perjalanan', (req, res) => {
 
 	const waktuStop = new Date();
 	const panjangPerjalanan = 0;
-	const poinDiperoleh = 5;
 
 	const sql =
-		'UPDATE data_perjalanan SET koordinat_end = ?, panjang_perjalanan = ?, poin_diperoleh = ? WHERE nama = ? AND koordinat_end IS NULL';
+		'UPDATE data_perjalanan SET koordinat_end = ?, panjang_perjalanan = ? WHERE nama = ? AND koordinat_end IS NULL';
 
-	db.query(
-		sql,
-		[koordinat_end, panjangPerjalanan, poinDiperoleh, nama],
-		(err, result) => {
-			if (err) {
-				return res
-					.status(500)
-					.json({ error: 'Gagal menghentikan perjalanan.' });
-			}
-
-			if (result.affectedRows > 0) {
-				console.log('Perjalanan berhasil dihentikan');
-
-				const leaderboardSql =
-					'INSERT INTO leaderboard (username, total_points) VALUES (?, ?) ON DUPLICATE KEY UPDATE total_points = total_points + ?';
-				db.query(
-					leaderboardSql,
-					[nama, poinDiperoleh, poinDiperoleh],
-					(leaderboardErr, leaderboardResult) => {
-						if (leaderboardErr) {
-							console.error('Error updating leaderboard:', leaderboardErr);
-						}
-						res.status(200).json({
-							message: 'Perjalanan berhasil dihentikan.',
-							poin_diperoleh: poinDiperoleh,
-						});
-					}
-				);
-			} else {
-				console.log('Perjalanan tidak ditemukan atau sudah dihentikan');
-				res
-					.status(404)
-					.json({ error: 'Perjalanan tidak ditemukan atau sudah dihentikan.' });
-			}
+	db.query(sql, [koordinat_end, panjangPerjalanan, nama], (err, result) => {
+		if (err) {
+			return res.status(500).json({ error: 'Gagal menghentikan perjalanan.' });
 		}
-	);
+
+		if (result.affectedRows > 0) {
+			console.log('Perjalanan berhasil dihentikan');
+			res.status(200).json({
+				message: 'Perjalanan berhasil dihentikan.',
+				panjang_perjalanan: panjangPerjalanan,
+			});
+		} else {
+			console.log('Perjalanan tidak ditemukan atau sudah dihentikan');
+			res
+				.status(404)
+				.json({ error: 'Perjalanan tidak ditemukan atau sudah dihentikan.' });
+		}
+	});
 });
 
 app.post('/api/login', (req, res) => {
@@ -227,7 +188,7 @@ app.post('/api/login', (req, res) => {
 	}
 
 	const sql =
-		'SELECT * FROM register_data WHERE (email = ? OR username = ?) AND password = ?';
+		'SELECT * FROM data_register WHERE (email = ? OR username = ?) AND password = ?';
 	db.query(sql, [email, username, password], (err, result) => {
 		if (err) {
 			console.error('Error fetching login data:', err);
@@ -267,8 +228,8 @@ app.get('/api/perjalanans', (req, res) => {
 	});
 });
 
-app.get('/api/users', (req, res) => {
-	const sql = 'SELECT * FROM register_data';
+app.get('/api/users', (req, res, next) => {
+	const sql = 'SELECT * FROM data_register';
 	db.query(sql, (err, result) => {
 		if (err) {
 			return next(err);
@@ -294,7 +255,7 @@ function calculateTotalPoints(perjalanans) {
 	return totalPoints;
 }
 
-app.get('/api/export-to-excel', (req, res) => {
+app.get('/api/export-to-excel', (req, res, next) => {
 	const sql = 'SELECT * FROM data_perjalanan';
 
 	db.query(sql, (err, result) => {
@@ -305,6 +266,7 @@ app.get('/api/export-to-excel', (req, res) => {
 		const workbook = new ExcelJS.Workbook();
 		const worksheet = workbook.addWorksheet('Data Perjalanan');
 
+		// Menambahkan header
 		const headerRow = worksheet.addRow([
 			'ID',
 			'Waktu',
@@ -315,13 +277,14 @@ app.get('/api/export-to-excel', (req, res) => {
 			'Koordinat Start',
 			'Koordinat End',
 			'Panjang Perjalanan',
-			'Poin Diperoleh',
 		]);
 
+		// Menambahkan data
 		result.forEach((row) => {
 			worksheet.addRow(Object.values(row));
 		});
 
+		// Mengatur header untuk response
 		res.setHeader(
 			'Content-Type',
 			'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -331,6 +294,7 @@ app.get('/api/export-to-excel', (req, res) => {
 			'attachment; filename=data_perjalanan.xlsx'
 		);
 
+		// Menulis workbook ke response
 		workbook.xlsx.write(res).then(() => {
 			res.end();
 		});
