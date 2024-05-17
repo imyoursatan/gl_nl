@@ -8,21 +8,6 @@ const UserList = () => {
 	const [perjalanans, setPerjalanans] = useState([]);
 	const [locations, setLocations] = useState({});
 
-	const reverseGeocode = async (coords) => {
-		const [latitude, longitude] = coords;
-
-		try {
-			const response = await axios.get(
-				`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`
-			);
-			const locationName = response.data.display_name;
-			return locationName;
-		} catch (error) {
-			console.error('Error reverse geocoding:', error);
-			return `${latitude}, ${longitude}`;
-		}
-	};
-
 	useEffect(() => {
 		axios
 			.get('https://gamifikasilivetracking.com/api/users')
@@ -102,30 +87,21 @@ const UserList = () => {
 			return;
 		}
 		try {
-			const enrichedPerjalanans = await Promise.all(
-				perjalanans.map(async (perjalanan) => {
-					const startLocation = await reverseGeocode(
-						perjalanan.koordinat_start.split(',').map(Number)
-					);
-					const endLocation = await reverseGeocode(
-						perjalanan.koordinat_end.split(',').map(Number)
-					);
-					const startCoords = perjalanan.koordinat_start.split(',').map(Number);
-					const endCoords = perjalanan.koordinat_end.split(',').map(Number);
-					const journeyDistance = haversineDistance(
-						startCoords[0],
-						startCoords[1],
-						endCoords[0],
-						endCoords[1]
-					);
-					return {
-						...perjalanan,
-						koordinat_start: `${startLocation} (${perjalanan.koordinat_start})`,
-						koordinat_end: `${endLocation} (${perjalanan.koordinat_end})`,
-						panjang_perjalanan: formatDistance(journeyDistance) || 'Loading...',
-					};
-				})
-			);
+			const enrichedPerjalanans = perjalanans.map((perjalanan) => {
+				const startCoords = perjalanan.koordinat_start.split(',').map(Number);
+				const endCoords = perjalanan.koordinat_end.split(',').map(Number);
+				const journeyDistance = haversineDistance(
+					startCoords[0],
+					startCoords[1],
+					endCoords[0],
+					endCoords[1]
+				);
+
+				return {
+					...perjalanan,
+					panjang_perjalanan: formatDistance(journeyDistance) || 'Loading...',
+				};
+			});
 			const wsPerjalanans = XLSX.utils.json_to_sheet(enrichedPerjalanans);
 			const wb = XLSX.utils.book_new();
 			XLSX.utils.book_append_sheet(
@@ -134,7 +110,7 @@ const UserList = () => {
 				'Users'
 			);
 			XLSX.utils.book_append_sheet(wb, wsPerjalanans, 'Perjalanans');
-			XLSX.writeFile(wb, 'users_and_perjalanans_tanpa_leaderboard.xlsx');
+			XLSX.writeFile(wb, 'users_and_perjalanans.xlsx');
 		} catch (error) {
 			console.error('Error saat mengekspor data ke Excel:', error);
 		}
