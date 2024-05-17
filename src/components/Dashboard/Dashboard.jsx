@@ -61,6 +61,13 @@ const DashboardForm = ({
 			setUserData({
 				username: location.state.username,
 			});
+			localStorage.setItem('username', location.state.username);
+		} else {
+			const savedUsername = localStorage.getItem('username');
+			if (savedUsername) {
+				setUsername(savedUsername);
+				setUserData({ username: savedUsername });
+			}
 		}
 	}, [location]);
 

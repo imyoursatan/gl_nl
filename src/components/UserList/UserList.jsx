@@ -25,7 +25,7 @@ const UserList = () => {
 
 	useEffect(() => {
 		axios
-			.get('http://localhost:3001/api/users')
+			.get('https://gamifikasilivetracking.com/api/users')
 			.then((response) => {
 				console.log('Data pengguna dari server:', response.data);
 				const usersWithPoints = response.data.map((user) => ({
@@ -37,8 +37,9 @@ const UserList = () => {
 			.catch((error) => {
 				console.error('Error fetching user data:', error);
 			});
+
 		axios
-			.get('http://localhost:3001/api/perjalanans')
+			.get('https://gamifikasilivetracking.com/api/perjalanans')
 			.then((response) => {
 				console.log('Data perjalanan dari server:', response.data);
 				setPerjalanans(response.data);
@@ -54,27 +55,29 @@ const UserList = () => {
 				const locationsData = {};
 				await Promise.all(
 					perjalanans.map(async (perjalanan) => {
-						const startLocation = await reverseGeocode(
-							perjalanan.koordinat_start.split(',').map(Number)
-						);
-						const endLocation = await reverseGeocode(
-							perjalanan.koordinat_end.split(',').map(Number)
-						);
-						const startCoords = perjalanan.koordinat_start
-							.split(',')
-							.map(Number);
-						const endCoords = perjalanan.koordinat_end.split(',').map(Number);
-						const journeyDistance = haversineDistance(
-							startCoords[0],
-							startCoords[1],
-							endCoords[0],
-							endCoords[1]
-						);
-						locationsData[perjalanan.id] = {
-							start: startLocation,
-							end: endLocation,
-							distance: journeyDistance,
-						};
+						if (perjalanan.koordinat_start && perjalanan.koordinat_end) {
+							const startCoords = perjalanan.koordinat_start
+								.split(',')
+								.map(Number);
+							const endCoords = perjalanan.koordinat_end.split(',').map(Number);
+							const journeyDistance = haversineDistance(
+								startCoords[0],
+								startCoords[1],
+								endCoords[0],
+								endCoords[1]
+							);
+							locationsData[perjalanan.id] = {
+								start: perjalanan.koordinat_start,
+								end: perjalanan.koordinat_end,
+								distance: journeyDistance,
+							};
+						} else {
+							locationsData[perjalanan.id] = {
+								start: 'N/A',
+								end: 'N/A',
+								distance: 'N/A',
+							};
+						}
 					})
 				);
 				setLocations(locationsData);
@@ -202,7 +205,7 @@ const UserList = () => {
 	};
 
 	const haversineDistance = (lat1, lon1, lat2, lon2) => {
-		const R = 6371;
+		const R = 6371; // Radius bumi dalam kilometer
 		const dLat = (lat2 - lat1) * (Math.PI / 180);
 		const dLon = (lon2 - lon1) * (Math.PI / 180);
 		const a =
@@ -212,12 +215,12 @@ const UserList = () => {
 				Math.sin(dLon / 2) *
 				Math.sin(dLon / 2);
 		const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-		const distance = R * c;
+		const distance = R * c; // Jarak dalam kilometer
 		return distance;
 	};
 
 	const formatDistance = (distance) => {
-		if (distance !== undefined) {
+		if (typeof distance === 'number') {
 			if (distance < 1) {
 				return `${(distance * 1000).toFixed(0)} m`;
 			} else {
@@ -239,7 +242,6 @@ const UserList = () => {
 						<th>Email</th>
 						<th>Username</th>
 						<th>Password</th>
-						{/* <th>Points</th> */}
 						<th>Action</th>
 					</tr>
 				</thead>
@@ -249,7 +251,6 @@ const UserList = () => {
 							<td>{user.email}</td>
 							<td>{user.username}</td>
 							<td>{user.password}</td>
-							{/* <td>{user.points}</td> */}
 							<td>
 								<button onClick={() => handleDeleteUser(user.id)}>Hapus</button>
 							</td>
@@ -270,7 +271,6 @@ const UserList = () => {
 						<th>Koordinat Start</th>
 						<th>Koordinat End</th>
 						<th>Panjang Perjalanan</th>
-						{/* <th>Poin Diperoleh</th> */}
 						<th>Action</th>
 					</tr>
 				</thead>
